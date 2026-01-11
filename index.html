@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI Flashcards 100</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel (JSX変換用) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Import Map: ReactとLucideアイコンを読み込むための設定 -->
+  <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1"
+      }
+    }
+  </script>
+
+  <style>
+    /* カスタムスクロールバーのスタイル */
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9; 
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1; 
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8; 
+    }
+    body {
+        margin: 0;
+        overflow: hidden; /* アプリ全体のスクロールを防ぐ */
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React Code -->
+  <script type="text/babel" data-type="module">
+    import React, { useState, useMemo, useEffect } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { 
+      Check, RefreshCw, Layout, Type, MousePointer, Bell, AlertCircle, 
+      CreditCard, Menu, X, ChevronRight, Eye, HelpCircle, Filter, 
+      Search, ArrowLeft, Home, User, Settings, MoreVertical, 
+      ChevronDown, Plus, Share, Heart, MessageCircle, MoreHorizontal,
+      Loader2, Calendar, MapPin, Image as ImageIcon, ToggleLeft, List,
+      Smartphone, Monitor, Grid, Command, AlignLeft, ArrowUpCircle,
+      FileText, Layers, Grip, MousePointer2, Info, Clock
+    } from 'lucide-react';
+
+    // --- UIデータセット (Q1〜Q100) ---
+    // platform: 'common' | 'pc' | 'mobile'
+    const UI_DATA = [
+      // --- 初級編 (基本要素) ---
+      { id: 'header', title: 'ヘッダー', level: '初級', platform: 'common', type: 'bar-top', desc: '画面上部のナビゲーション領域。グローバルナビゲーション。' },
+      { id: 'footer', title: 'フッター', level: '初級', platform: 'common', type: 'bar-bottom', desc: '画面下部の情報・リンク領域。' },
+      { id: 'button', title: 'ボタン', level: '初級', platform: 'common', type: 'button', variant: 'primary', desc: 'アクションを実行する要素。' },
+      { id: 'textfield', title: 'テキストフィールド', level: '初級', platform: 'common', type: 'input', variant: 'text', desc: '文字入力エリア。テキストボックス。' },
+      { id: 'searchbar', title: 'サーチバー', level: '初級', platform: 'common', type: 'input', variant: 'search', desc: '検索ワードを入力するボックス。' },
+      { id: 'addressbar', title: 'アドレスバー', level: '初級', platform: 'common', type: 'bar-address', desc: 'URLを表示・入力するバー。' },
+      { id: 'sidemenu', title: 'サイドメニュー', level: '初級', platform: 'pc', type: 'layout-side', desc: '画面端に配置されるメニュー。サイドバー。' },
+      { id: 'form', title: 'フォーム', level: '初級', platform: 'common', type: 'form', desc: 'データ入力用の一連のUI群。' },
+      { id: 'tabbar', title: 'タブバー', level: '初級', platform: 'mobile', type: 'bar-tab', desc: 'アプリの下部にある画面切り替えナビゲーション。' },
+      { id: 'tabs', title: 'タブ', level: '初級', platform: 'common', type: 'tabs', desc: 'コンテンツを切り替える見出しタブ。' },
+      { id: 'navbar', title: 'ナビゲーションバー', level: '初級', platform: 'mobile', type: 'bar-nav', desc: '画面タイトルや戻るボタンがあるバー。AppBar。' },
+      { id: 'toolbar', title: 'ツールバー', level: '初級', platform: 'common', type: 'bar-tool', desc: '操作ツールが並ぶ領域。' },
+      { id: 'icon-button', title: 'アイコンボタン', level: '初級', platform: 'common', type: 'button', variant: 'icon', desc: 'アイコンのみのボタン。' },
+      { id: 'text-button', title: 'テキストボタン', level: '初級', platform: 'common', type: 'button', variant: 'text', desc: '文字のみのボタン。リンクボタン。' },
+      { id: 'placeholder', title: 'プレースホルダー', level: '初級', platform: 'common', type: 'input', variant: 'placeholder', desc: '入力欄のうっすら見えるヒントテキスト。' },
+      { id: 'statusbar', title: 'ステータスバー', level: '初級', platform: 'mobile', type: 'bar-status', desc: '時刻、電波、バッテリー残量を表示する最上部の帯。' },
+      { id: 'dialog', title: 'ダイアログ', level: '初級', platform: 'common', type: 'modal', variant: 'dialog', desc: 'ユーザーに確認を求めるポップアップウィンドウ。' },
+      { id: 'alert', title: 'アラート', level: '初級', platform: 'common', type: 'modal', variant: 'alert', desc: '緊急の通知や警告を表示するダイアログ。' },
+      { id: 'list', title: 'リスト', level: '初級', platform: 'common', type: 'list', variant: 'simple', desc: '項目を縦に並べたもの。' },
+      { id: 'table', title: 'テーブル', level: '初級', platform: 'pc', type: 'table', desc: '行と列で構成される表組み。' },
+      { id: 'chart', title: 'チャート', level: '初級', platform: 'common', type: 'chart', desc: 'データを可視化したグラフ。' },
+      { id: 'card', title: 'カード', level: '初級', platform: 'common', type: 'card', desc: '情報をひとまとめにした矩形のUIコンポーネント。' },
+      { id: 'checkbox', title: 'チェックボックス', level: '初級', platform: 'common', type: 'selection', variant: 'check', desc: '複数選択可能な四角い選択肢。' },
+      { id: 'switch', title: 'スイッチ', level: '初級', platform: 'mobile', type: 'selection', variant: 'switch', desc: 'ON/OFFを切り替えるトグルスイッチ。' },
+      { id: 'radio', title: 'ラジオボタン', level: '初級', platform: 'common', type: 'selection', variant: 'radio', desc: '単一選択の丸い選択肢。' },
+      { id: 'dropdown', title: 'ドロップダウン', level: '初級', platform: 'common', type: 'input', variant: 'dropdown', desc: 'クリックで選択肢が展開するメニュー。プルダウン。' },
+      { id: 'accordion', title: 'アコーディオン', level: '初級', platform: 'common', type: 'list', variant: 'accordion', desc: 'タップで詳細が開閉するリスト。' },
+      { id: 'filter', title: 'フィルター', level: '初級', platform: 'common', type: 'control', variant: 'filter', desc: '条件による絞り込み機能。' },
+      { id: 'sort', title: 'ソート', level: '初級', platform: 'common', type: 'control', variant: 'sort', desc: '並び替え機能。' },
+      { id: 'breadcrumbs', title: 'パンくずリスト', level: '初級', platform: 'pc', type: 'nav-breadcrumbs', desc: '現在のページ階層を示すナビゲーションリンク。' },
+      { id: 'divider', title: 'ディバイダー', level: '初級', platform: 'common', type: 'divider', desc: 'コンテンツを区切る線。' },
+      { id: 'slider', title: 'スライダー', level: '初級', platform: 'common', type: 'input', variant: 'slider', desc: 'つまみを動かして数値を調整するバー。' },
+      { id: 'osk', title: 'オンスクリーンキーボード', level: '初級', platform: 'mobile', type: 'osk', desc: '画面上に表示されるソフトウェアキーボード。' },
+      { id: 'webview', title: 'Web View', level: '初級', platform: 'mobile', type: 'webview', desc: 'アプリ内でWebページを表示するブラウザ領域。' },
+
+      // --- 中級編 (応用・モバイル・リッチ表現) ---
+      { id: 'drawer', title: 'ドロワー', level: '中級', platform: 'mobile', type: 'overlay', variant: 'drawer', desc: '端から引き出されるメニュー。ハンバーガーメニュー。' },
+      { id: 'modal-sheet', title: 'モーダル（BottomSheet）', level: '中級', platform: 'mobile', type: 'overlay', variant: 'sheet', desc: '下からスライドして出てくるハーフモーダル。' },
+      { id: 'sheet-nonmodal', title: 'シート（非モーダル）', level: '中級', platform: 'mobile', type: 'overlay', variant: 'sheet-inline', desc: '背景をブロックせず操作できるシート。' },
+      { id: 'carousel', title: 'カルーセル', level: '中級', platform: 'common', type: 'list', variant: 'carousel', desc: '横スクロールで項目を見せるスライドショー。' },
+      { id: 'secondary-button', title: 'セカンダリボタン', level: '中級', platform: 'common', type: 'button', variant: 'secondary', desc: '副次的なアクション（キャンセル等）のボタン。' },
+      { id: 'stepbar', title: 'ステップバー', level: '中級', platform: 'common', type: 'indicator', variant: 'step', desc: '手順の進捗を示すインジケーター。ウィザード。' },
+      { id: 'avatar', title: 'アバター', level: '中級', platform: 'common', type: 'media', variant: 'avatar', desc: 'ユーザーを表すアイコン画像。' },
+      { id: 'badge', title: 'バッジ', level: '中級', platform: 'common', type: 'indicator', variant: 'badge', desc: '通知数などをアイコンの角に表示するマーク。' },
+      { id: 'feed', title: 'フィード', level: '中級', platform: 'common', type: 'list', variant: 'feed', desc: '時系列に流れるコンテンツリスト。タイムライン。' },
+      { id: 'thread', title: 'スレッド', level: '中級', platform: 'common', type: 'list', variant: 'thread', desc: '掲示板やチャットでの会話の一連の流れ。' },
+      { id: 'progress', title: 'インジケーター', level: '中級', platform: 'common', type: 'indicator', variant: 'bar', desc: '処理の進捗率を示すバー。プログレスバー。' },
+      { id: 'spinner', title: 'スピナー', level: '中級', platform: 'common', type: 'indicator', variant: 'spinner', desc: '読み込み中を示す回転アニメーション。' },
+      { id: 'page-indicator', title: 'ページインジケーター', level: '中級', platform: 'mobile', type: 'indicator', variant: 'dots', desc: '現在のページ位置を示すドット（点）。' },
+      { id: 'pagination', title: 'ページネーション', level: '中級', platform: 'pc', type: 'nav-pagination', desc: 'ページ分割されたリストの番号付き移動リンク。' },
+      { id: 'toast', title: 'トースト', level: '中級', platform: 'common', type: 'notification', variant: 'toast', desc: '自動的に消える簡易通知メッセージ。Snackbar。' },
+      { id: 'picker', title: 'ピッカー', level: '中級', platform: 'mobile', type: 'input', variant: 'picker', desc: 'ドラムロールなどを回して値を選ぶUI。' },
+      { id: 'color-picker', title: 'カラーピッカー', level: '中級', platform: 'pc', type: 'input', variant: 'color', desc: '色を選択するツール。' },
+      { id: 'date-picker', title: '日付ピッカー', level: '中級', platform: 'common', type: 'input', variant: 'date', desc: 'カレンダーから日付を選ぶUI。' },
+      { id: 'seekbar', title: 'シークバー', level: '中級', platform: 'common', type: 'input', variant: 'seek', desc: '動画や音楽の再生位置を調整するスライダー。' },
+      { id: 'range-slider', title: 'レンジスライダー', level: '中級', platform: 'common', type: 'input', variant: 'range', desc: '最小値と最大値の2点で範囲を指定するスライダー。' },
+      { id: 'scrim', title: 'スクリム', level: '中級', platform: 'common', type: 'visual', variant: 'scrim', desc: 'モーダル表示時などに背景を暗くするオーバーレイレイヤー。' },
+      { id: 'segmented', title: 'セグメンテッドコントロール', level: '中級', platform: 'mobile', type: 'selection', variant: 'segment', desc: '連結されたボタングループでの切り替えスイッチ。' },
+      { id: 'tooltip', title: 'ツールチップ', level: '中級', platform: 'pc', type: 'popup', variant: 'tooltip', desc: 'マウスホバー時に出る補足説明の吹き出し。' },
+      { id: 'popover', title: 'ポップオーバー', level: '中級', platform: 'pc', type: 'popup', variant: 'popover', desc: '要素をクリックすると吹き出しで表示されるビュー。' },
+      { id: 'stepper', title: 'ステッパー', level: '中級', platform: 'common', type: 'input', variant: 'stepper', desc: 'プラスマイナスボタンで数値を増減させるUI。' },
+      { id: 'rating', title: 'レイティングバー', level: '中級', platform: 'common', type: 'input', variant: 'rating', desc: '星などの数で評価を入力するUI。' },
+      { id: 'tag', title: 'タグ', level: '中級', platform: 'common', type: 'visual', variant: 'tag', desc: '分類やキーワードを示す小さなラベル。' },
+      { id: 'context-menu', title: 'コンテキストメニュー', level: '中級', platform: 'pc', type: 'menu', variant: 'context', desc: '右クリックなどでカーソル位置に出る操作メニュー。' },
+      { id: 'dropzone', title: 'ドロップゾーン', level: '中級', platform: 'pc', type: 'input', variant: 'dropzone', desc: 'ファイルをドラッグ＆ドロップしてアップロードする領域。' },
+      { id: 'marker', title: 'マーカー', level: '中級', platform: 'common', type: 'visual', variant: 'marker', desc: '地図上の特定の地点を示すピン。' },
+      { id: 'splash', title: 'スプラッシュ', level: '中級', platform: 'mobile', type: 'screen', variant: 'splash', desc: 'アプリ起動時に一瞬表示されるロゴ画面。' },
+      { id: 'walkthrough', title: 'ウォークスルー', level: '中級', platform: 'mobile', type: 'screen', variant: 'walkthrough', desc: '初回起動時にアプリの使い方を紹介する画面。' },
+
+      // --- 上級編 (複雑・専門的・モダン) ---
+      { id: 'coachmark', title: 'コーチマーク', level: '上級', platform: 'mobile', type: 'overlay', variant: 'coach', desc: '実際のUIの上に重ねて操作方法を説明するガイド表示。' },
+      { id: 'skeleton', title: 'スケルトンスクリーン', level: '上級', platform: 'common', type: 'loading', variant: 'skeleton', desc: '読み込み中に表示する骨組みだけの仮UI。' },
+      { id: 'lightbox', title: 'ライトボックス', level: '上級', platform: 'pc', type: 'overlay', variant: 'lightbox', desc: '画像を画面中央に拡大表示し背景を暗くする表現。' },
+      { id: 'combobox', title: 'コンボボックス', level: '上級', platform: 'pc', type: 'input', variant: 'combo', desc: 'テキスト入力欄とドロップダウンリストが合体したUI。' },
+      { id: 'scopebar', title: 'スコープバー', level: '上級', platform: 'pc', type: 'bar-tool', variant: 'scope', desc: '検索範囲やフィルタ条件を切り替えるバー。' },
+      { id: 'megamenu', title: 'メガメニュー', level: '上級', platform: 'pc', type: 'menu', variant: 'mega', desc: 'ホバー時に多階層のリンクを一度に展開する大きなメニュー。' },
+      { id: 'marquee', title: 'マーキー', level: '上級', platform: 'common', type: 'visual', variant: 'marquee', desc: '文字が流れる電光掲示板のような表現。' },
+      { id: 'ripple', title: 'リップルボタン', level: '上級', platform: 'mobile', type: 'button', variant: 'ripple', desc: 'タップ時に波紋が広がるエフェクト付きボタン。' },
+      { id: 'pane', title: 'ペイン', level: '上級', platform: 'pc', type: 'layout', variant: 'pane', desc: '画面を分割した各領域（例：メールアプリのリストと詳細）。' },
+      { id: 'springboard', title: 'スプリングボード', level: '上級', platform: 'mobile', type: 'layout', variant: 'grid-icons', desc: 'スマホのホーム画面のようにアイコンがグリッドに並ぶメニュー。' },
+
+      // --- 追加分 (76〜100) ---
+      { id: 'fab', title: 'FAB', level: '上級', platform: 'mobile', type: 'button', variant: 'fab', desc: 'Floating Action Button。画面上に浮いている主要アクションボタン。' },
+      { id: 'pull-to-refresh', title: 'プル・トゥ・リフレッシュ', level: '上級', platform: 'mobile', type: 'control', variant: 'pull-refresh', desc: '画面を下に引っ張ってコンテンツを更新する操作UI。' },
+      { id: 'swipe-action', title: 'スワイプアクション', level: '上級', platform: 'mobile', type: 'list', variant: 'swipe', desc: 'リスト項目を横にスワイプして削除やアーカイブを行う操作。' },
+      { id: 'chip', title: 'チップ', level: '上級', platform: 'common', type: 'visual', variant: 'chip', desc: '情報をコンパクトに表示し、入力・選択・フィルタリングに使う楕円形の要素。' },
+      { id: 'hero', title: 'ヒーローイメージ', level: '上級', platform: 'pc', type: 'visual', variant: 'hero', desc: 'Webサイトのトップにある印象的な巨大な画像やバナーエリア。' },
+      { id: 'treeview', title: 'ツリービュー', level: '上級', platform: 'pc', type: 'list', variant: 'tree', desc: 'フォルダ構成などを階層的に開閉して表示するリスト。' },
+      { id: 'empty-state', title: 'エンプティステート', level: '上級', platform: 'common', type: 'visual', variant: 'empty', desc: 'データが何もない（0件の）時に表示する、案内やイラストを含む画面。' },
+      { id: 'rich-text', title: 'リッチテキストエディタ', level: '上級', platform: 'pc', type: 'input', variant: 'wysiwyg', desc: '太字やリンク装飾などがその場で反映されるテキスト入力エリア。WYSIWYG。' },
+      { id: 'masonry', title: 'メイソンリーレイアウト', level: '上級', platform: 'pc', type: 'layout', variant: 'masonry', desc: '高さの異なる要素をレンガ積みのように隙間なく敷き詰めるレイアウト。' },
+      { id: 'timeline', title: 'タイムライン', level: '上級', platform: 'common', type: 'list', variant: 'timeline', desc: '垂直な線に沿って時系列にイベントを配置したリスト。' },
+      { id: 'input-mask', title: 'インプットマスク', level: '上級', platform: 'pc', type: 'input', variant: 'mask', desc: '電話番号など、入力中に自動でフォーマット（ハイフン等）を適用する機能。' },
+      { id: 'back-to-top', title: 'トップへ戻るボタン', level: '上級', platform: 'common', type: 'button', variant: 'backtop', desc: '長いページをスクロールした際に出現する、一番上に戻るボタン。' },
+      { id: 'scrollspy', title: 'スクロールスパイ', level: '上級', platform: 'pc', type: 'nav', variant: 'scrollspy', desc: 'スクロール位置に応じて、現在見ているセクションの目次をハイライトする機能。' },
+      { id: 'kebab-menu', title: 'ケバブメニュー', level: '上級', platform: 'common', type: 'button', variant: 'kebab', desc: '縦に3つの点が並んだメニューアイコン。' },
+      { id: 'meatball-menu', title: 'ミートボールメニュー', level: '上級', platform: 'common', type: 'button', variant: 'meatball', desc: '横に3つの点が並んだメニューアイコン。' },
+      { id: 'command-palette', title: 'コマンドパレット', level: '上級', platform: 'pc', type: 'modal', variant: 'command', desc: 'ショートカットキーで呼び出し、機能を検索・実行する入力窓。' },
+      { id: 'property-inspector', title: 'プロパティインスペクタ', level: '上級', platform: 'pc', type: 'layout-side', variant: 'inspector', desc: '選択したオブジェクトの詳細設定を行う右サイドバーパネル。' },
+      { id: 'dock', title: 'ドック', level: '上級', platform: 'pc', type: 'bar-bottom', variant: 'dock', desc: 'macOSのようにアプリアイコンが並ぶランチャー領域。' },
+      { id: 'gallery', title: 'ギャラリー', level: '上級', platform: 'common', type: 'layout', variant: 'gallery', desc: '画像や写真をグリッド状に並べて閲覧するビュー。' },
+      { id: 'status-indicator', title: 'ステータスインジケーター', level: '上級', platform: 'common', type: 'indicator', variant: 'status-dot', desc: 'オンライン・オフラインなどの状態を示す小さな色付きの点。' },
+      { id: 'notification-center', title: '通知センター', level: '上級', platform: 'common', type: 'overlay', variant: 'noti-center', desc: '過去の通知履歴を一覧で確認できる画面やパネル。' },
+      { id: 'bottom-nav', title: 'ボトムナビゲーション', level: '上級', platform: 'mobile', type: 'bar-bottom', variant: 'bottom-nav', desc: 'スマホアプリの下部にある、3〜5個の主要画面への移動リンク。' },
+      { id: 'avatar-group', title: 'アバターグループ', level: '上級', platform: 'common', type: 'visual', variant: 'avatar-group', desc: '複数のユーザーアイコンを少し重ねて並べた表示。' },
+      { id: 'action-sheet', title: 'アクションシート', level: '上級', platform: 'mobile', type: 'overlay', variant: 'action-sheet', desc: 'iOSでよく見る、下から出てくる選択肢のメニュー（削除・共有など）。' },
+    ];
+
+    // --- 共通レンダラーコンポーネント ---
+    const PreviewRenderer = ({ item, viewMode }) => {
+      const isMobileFrame = 
+        viewMode === 'mobile' ? true :
+        viewMode === 'pc' ? false :
+        item.platform === 'mobile'; // autoの場合
+
+      return (
+        <div className={`w-full h-full flex items-center justify-center p-4 transition-all duration-500 ${isMobileFrame ? '' : 'bg-slate-50'}`}>
+          {isMobileFrame ? (
+            <div className="relative w-[300px] h-[600px] bg-white border-4 border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col ring-4 ring-slate-100 transform transition-all">
+              <div className="absolute top-0 left-0 w-full h-7 bg-slate-800 z-50 flex justify-center items-end pb-1">
+                <div className="w-20 h-4 bg-slate-900 rounded-full"></div>
+              </div>
+              <div className="flex-1 relative bg-slate-50 overflow-hidden flex flex-col pt-7">
+                <SmartComponent item={item} context="mobile" />
+              </div>
+              <div className="h-5 bg-white w-full flex justify-center items-center z-50 pb-1">
+                <div className="w-1/3 h-1.5 bg-slate-300 rounded-full"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="w-full max-w-3xl min-h-[400px] p-8 bg-white rounded-lg shadow-lg border border-slate-200 flex items-center justify-center relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-8 bg-slate-100 border-b flex items-center px-4 gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                </div>
+                <div className="flex-1 mx-4 h-5 bg-white rounded border border-slate-200 text-[10px] text-slate-400 flex items-center px-2">
+                  example.com/{item.id}
+                </div>
+              </div>
+              <div className="mt-6 w-full flex justify-center">
+                <SmartComponent item={item} context="desktop" />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // コンテンツの出し分けロジック
+    const SmartComponent = ({ item, context }) => {
+      const { type, variant, title } = item;
+      
+      // (レンダリングロジックは変更なし、省略可能だが念のため記述)
+      if (variant === 'fab') return <div className="relative w-full h-full bg-slate-100"><div className="p-4 space-y-4"><div className="h-20 bg-white rounded"></div><div className="h-20 bg-white rounded"></div><div className="h-20 bg-white rounded"></div></div><div className="absolute bottom-6 right-6 w-14 h-14 bg-blue-600 rounded-full shadow-lg flex items-center justify-center text-white"><Plus className="h-8 w-8" /></div></div>;
+      if (variant === 'pull-refresh') return <div className="w-full h-full bg-slate-50 flex flex-col items-center pt-8"><div className="flex flex-col items-center text-slate-400 mb-4"><Loader2 className="animate-spin h-6 w-6" /><span className="text-xs mt-1">更新中...</span></div><div className="w-full px-4 space-y-3 opacity-50"><div className="h-16 bg-white rounded shadow-sm"></div><div className="h-16 bg-white rounded shadow-sm"></div></div></div>;
+      if (variant === 'swipe') return <div className="w-full px-2 pt-10"><div className="relative w-full h-16 bg-red-500 rounded-lg flex items-center justify-end px-4 text-white font-bold mb-2 shadow-sm"><span>削除</span><div className="absolute inset-0 bg-white rounded-lg flex items-center px-4 border shadow-sm -translate-x-20 transition-transform">スワイプして削除</div></div><div className="w-full h-16 bg-white rounded-lg border shadow-sm flex items-center px-4 text-slate-400">通常アイテム</div></div>;
+      if (variant === 'chip') return <div className="flex flex-wrap gap-2 p-4"><span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-1">React <X className="h-3 w-3"/></span><span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm hover:bg-slate-200 cursor-pointer">Vue.js</span><span className="px-3 py-1 border border-slate-300 rounded-full text-sm text-slate-500">Angular</span></div>;
+      if (variant === 'hero') return <div className="w-full"><div className="w-full h-64 bg-gradient-to-r from-indigo-500 to-purple-600 flex flex-col items-center justify-center text-white text-center p-8"><h1 className="text-4xl font-bold mb-4">Welcome to Our Service</h1><p className="mb-6 text-lg opacity-90">最高の体験をあなたに提供します。</p><button className="bg-white text-indigo-600 px-6 py-2 rounded-full font-bold">詳しく見る</button></div><div className="p-8"><div className="h-4 bg-slate-200 w-3/4 rounded"></div></div></div>;
+      if (variant === 'tree') return <div className="w-64 border rounded p-4 bg-white"><div className="flex items-center gap-1 font-bold text-slate-700 mb-2"><ChevronDown className="h-4 w-4"/> Project Root</div><div className="pl-4 space-y-2"><div className="flex items-center gap-1 text-slate-600"><ChevronDown className="h-4 w-4"/> src</div><div className="pl-5 space-y-1"><div className="flex items-center gap-2 text-sm text-blue-600"><FileText className="h-3 w-3"/> App.js</div><div className="flex items-center gap-2 text-sm text-slate-500"><FileText className="h-3 w-3"/> index.css</div></div><div className="flex items-center gap-1 text-slate-600"><ChevronRight className="h-4 w-4"/> components</div></div></div>;
+      if (variant === 'empty') return <div className="text-center p-8"><div className="w-32 h-32 bg-slate-100 rounded-full mx-auto flex items-center justify-center mb-4"><Search className="h-12 w-12 text-slate-300" /></div><h3 className="text-lg font-bold text-slate-700">データがありません</h3><p className="text-sm text-slate-500 mt-2 mb-6">新しいアイテムを追加するか、検索条件を変更してください。</p><button className="bg-blue-600 text-white px-4 py-2 rounded">新規作成</button></div>;
+      if (variant === 'wysiwyg') return <div className="w-full border rounded-lg overflow-hidden shadow-sm"><div className="bg-slate-50 border-b p-2 flex gap-2"><button className="p-1 hover:bg-slate-200 rounded font-bold">B</button><button className="p-1 hover:bg-slate-200 rounded italic">I</button><button className="p-1 hover:bg-slate-200 rounded underline">U</button><div className="w-px h-6 bg-slate-300 mx-1"></div><button className="p-1 hover:bg-slate-200 rounded"><AlignLeft className="h-4 w-4"/></button></div><div className="p-4 h-32 bg-white text-slate-600">ここにテキストを入力...</div></div>;
+      if (variant === 'masonry') return <div className="w-full columns-3 gap-4 space-y-4"><div className="break-inside-avoid bg-slate-200 h-32 rounded"></div><div className="break-inside-avoid bg-slate-300 h-48 rounded"></div><div className="break-inside-avoid bg-slate-200 h-24 rounded"></div><div className="break-inside-avoid bg-slate-300 h-40 rounded"></div><div className="break-inside-avoid bg-slate-200 h-36 rounded"></div><div className="break-inside-avoid bg-slate-300 h-28 rounded"></div></div>;
+      if (variant === 'timeline') return <div className="w-full p-4"><div className="border-l-2 border-slate-200 pl-4 space-y-6"><div className="relative"><div className="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div><div className="text-xs text-slate-400">10:00 AM</div><div className="text-sm font-bold">注文を受付</div></div><div className="relative"><div className="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></div><div className="text-xs text-slate-400">11:30 AM</div><div className="text-sm font-bold">発送準備中</div><div className="text-xs text-slate-500 mt-1">倉庫からピッキング中...</div></div><div className="relative"><div className="absolute -left-[21px] top-1 w-3 h-3 bg-slate-300 rounded-full border-2 border-white"></div><div className="text-xs text-slate-400">Pending</div><div className="text-sm text-slate-500">配送完了</div></div></div></div>;
+      if (variant === 'mask') return <div className="w-full max-w-xs"><label className="text-sm font-bold text-slate-700">電話番号</label><input type="text" className="w-full border p-2 rounded mt-1 font-mono" placeholder="000-0000-0000" defaultValue="090-12" /><p className="text-xs text-slate-400 mt-1">自動でハイフンが入力されます</p></div>;
+      if (variant === 'backtop') return <div className="w-full h-full relative bg-slate-50"><div className="p-4 text-slate-300 space-y-4 text-center"><p>Scroll...</p><p>Scroll...</p><p>Scroll...</p></div><button className="absolute bottom-4 right-4 bg-slate-700 text-white p-3 rounded-full shadow-lg hover:bg-slate-600"><ArrowUpCircle className="h-6 w-6"/></button></div>;
+      if (variant === 'scrollspy') return <div className="flex w-full gap-4 h-40"><div className="w-1/4 border-r pr-4 space-y-2"><div className="text-sm font-bold text-blue-600 border-l-2 border-blue-600 pl-2">Section 1</div><div className="text-sm text-slate-500 pl-2.5">Section 2</div><div className="text-sm text-slate-500 pl-2.5">Section 3</div></div><div className="flex-1 bg-slate-50 p-2 text-xs text-slate-400">コンテンツエリア...</div></div>;
+      if (variant === 'kebab') return <div className="p-8 border rounded flex justify-between items-center bg-white shadow-sm w-64"><span>Item Name</span><button className="p-1 hover:bg-slate-100 rounded-full"><MoreVertical className="h-5 w-5 text-slate-600"/></button></div>;
+      if (variant === 'meatball') return <div className="p-8 border rounded flex justify-between items-center bg-white shadow-sm w-64"><span>Item Name</span><button className="p-1 hover:bg-slate-100 rounded-full"><MoreHorizontal className="h-5 w-5 text-slate-600"/></button></div>;
+      if (variant === 'command') return <div className="w-full max-w-md bg-white rounded-lg shadow-2xl border overflow-hidden"><div className="border-b p-3 flex items-center gap-2"><Command className="h-4 w-4 text-slate-400"/><input className="flex-1 outline-none text-sm" placeholder="コマンドを入力..." autoFocus /></div><div className="p-2"><div className="px-2 py-1.5 text-xs font-medium text-slate-400">Suggestions</div><div className="flex items-center justify-between px-2 py-2 hover:bg-blue-50 rounded text-sm cursor-pointer group"><span>新規ファイル作成</span><span className="text-xs text-slate-400 group-hover:text-blue-400">⌘N</span></div><div className="flex items-center justify-between px-2 py-2 hover:bg-blue-50 rounded text-sm cursor-pointer"><span>検索...</span></div></div></div>;
+      if (variant === 'inspector') return <div className="flex w-full h-full border rounded"><div className="flex-1 bg-slate-100 p-4 flex items-center justify-center"><div className="w-16 h-16 bg-blue-500 rounded shadow"></div></div><div className="w-48 bg-white border-l p-3"><div className="text-xs font-bold text-slate-500 mb-2">PROPERTIES</div><div className="space-y-3"><div className="text-xs"><label>Width</label><input className="w-full border rounded px-1 mt-0.5" value="64px"/></div><div className="text-xs"><label>Color</label><div className="flex items-center gap-2 mt-0.5"><div className="w-4 h-4 bg-blue-500 rounded border"></div><span>#3B82F6</span></div></div></div></div></div>;
+      if (variant === 'dock') return <div className="w-full h-full bg-cover bg-center flex items-end justify-center pb-4" style={{backgroundColor: '#333'}}><div className="bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-2xl flex gap-3"><div className="w-10 h-10 bg-blue-500 rounded-lg shadow-lg hover:-translate-y-2 transition-transform"></div><div className="w-10 h-10 bg-green-500 rounded-lg shadow-lg hover:-translate-y-2 transition-transform"></div><div className="w-10 h-10 bg-yellow-500 rounded-lg shadow-lg hover:-translate-y-2 transition-transform"></div><div className="w-px h-10 bg-white/20 mx-1"></div><div className="w-10 h-10 bg-slate-500 rounded-full shadow-lg hover:-translate-y-2 transition-transform"></div></div></div>;
+      if (variant === 'gallery') return <div className="grid grid-cols-3 gap-1 p-1"><div className="aspect-square bg-slate-200"></div><div className="aspect-square bg-slate-300"></div><div className="aspect-square bg-slate-200"></div><div className="aspect-square bg-slate-300"></div><div className="aspect-square bg-slate-200"></div><div className="aspect-square bg-slate-300"></div></div>;
+      if (variant === 'status-dot') return <div className="flex items-center gap-4 p-4 border rounded bg-white"><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div><span className="text-sm">Online</span></div><div className="flex items-center gap-2"><div className="w-2.5 h-2.5 bg-slate-300 rounded-full"></div><span className="text-sm text-slate-500">Offline</span></div></div>;
+      if (variant === 'noti-center') return <div className="w-full max-w-sm bg-white border rounded-lg shadow-xl overflow-hidden"><div className="bg-slate-50 p-3 border-b flex justify-between items-center"><span className="font-bold text-sm">通知</span><span className="text-xs text-blue-600 cursor-pointer">すべて既読</span></div><div className="divide-y"><div className="p-3 hover:bg-slate-50"><div className="text-sm font-medium">新着メッセージ</div><div className="text-xs text-slate-500 truncate">山田さんから: 明日の件ですが...</div></div><div className="p-3 hover:bg-slate-50 bg-blue-50/30"><div className="text-sm font-medium">アップデート完了</div><div className="text-xs text-slate-500">システムが最新になりました</div></div></div></div>;
+      if (variant === 'bottom-nav') return <div className="w-full h-full flex flex-col justify-end"><div className="bg-white border-t h-16 flex justify-around items-center px-2"><div className="flex flex-col items-center gap-1 text-blue-600"><Home className="h-6 w-6"/><span className="text-[10px]">Home</span></div><div className="flex flex-col items-center gap-1 text-slate-400"><Search className="h-6 w-6"/><span className="text-[10px]">Explore</span></div><div className="flex flex-col items-center gap-1 text-slate-400"><Bell className="h-6 w-6"/><span className="text-[10px]">Noti</span></div><div className="flex flex-col items-center gap-1 text-slate-400"><User className="h-6 w-6"/><span className="text-[10px]">Me</span></div></div></div>;
+      if (variant === 'avatar-group') return <div className="flex -space-x-2 overflow-hidden p-4"><div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-slate-200"></div><div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-slate-300"></div><div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-slate-400"></div><div className="inline-block h-10 w-10 rounded-full ring-2 ring-white bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">+3</div></div>;
+      if (variant === 'action-sheet') return <div className="w-full h-full bg-black/20 flex flex-col justify-end p-4"><div className="w-full space-y-2"><div className="bg-white/90 backdrop-blur rounded-xl overflow-hidden text-center text-blue-600"><div className="p-4 border-b text-xs text-slate-400 font-bold">この画像に対して...</div><div className="p-4 border-b hover:bg-slate-50 cursor-pointer">共有する</div><div className="p-4 hover:bg-slate-50 cursor-pointer">リンクをコピー</div></div><div className="bg-white rounded-xl p-4 text-center font-bold text-blue-600 cursor-pointer">キャンセル</div></div></div>;
+
+      // Navigation / Bars
+      if (type === 'bar-top' || item.id === 'navbar') return <div className="w-full"><div className="bg-indigo-600 text-white p-4 pt-8 shadow-md flex items-center justify-between"><Menu className="h-6 w-6" /><span className="font-bold text-lg">{title}</span><Search className="h-6 w-6" /></div><div className="p-4 text-slate-400 text-sm text-center mt-10">コンテンツエリア</div></div>;
+      if (type === 'bar-bottom' || item.id === 'tabbar') return <div className="w-full h-full flex flex-col justify-end"><div className="p-4 text-slate-400 text-sm text-center mb-10">コンテンツエリア</div><div className="bg-white border-t p-2 flex justify-around items-center text-xs text-slate-500"><div className="flex flex-col items-center text-indigo-600"><Home className="h-6 w-6" /><span>Home</span></div><div className="flex flex-col items-center"><Search className="h-6 w-6" /><span>Search</span></div><div className="flex flex-col items-center"><Bell className="h-6 w-6" /><span>Alerts</span></div><div className="flex flex-col items-center"><User className="h-6 w-6" /><span>Profile</span></div></div></div>;
+      if (type === 'bar-status') return <div className="w-full bg-slate-900 text-white text-[10px] font-mono p-1 px-4 flex justify-between items-center pt-2"><span>12:34</span><div className="flex gap-1"><span>5G</span><span>100%</span></div></div>;
+      
+      // Buttons
+      if (type === 'button') {
+        if (variant === 'primary') return <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold shadow-md hover:bg-blue-700">Primary Button</button>;
+        if (variant === 'secondary') return <button className="bg-white text-slate-700 border border-slate-300 px-6 py-3 rounded-lg font-bold shadow-sm hover:bg-slate-50">Secondary Button</button>;
+        if (variant === 'icon') return <button className="p-3 bg-indigo-100 text-indigo-600 rounded-full hover:bg-indigo-200"><Heart className="h-6 w-6 fill-current" /></button>;
+        if (variant === 'text') return <button className="text-blue-600 font-medium hover:underline p-2">テキストボタン</button>;
+        if (variant === 'ripple') return <button className="relative overflow-hidden bg-pink-500 text-white px-8 py-3 rounded shadow hover:bg-pink-600 active:scale-95 transition-all"><span className="absolute inset-0 w-full h-full bg-white opacity-20 animate-ping"></span>タップしてリップル</button>;
+      }
+
+      // Inputs
+      if (type === 'input') {
+        if (variant === 'text') return <div className="w-full"><label className="text-sm font-bold text-slate-700">名前</label><input type="text" className="w-full border p-2 rounded mt-1" placeholder="テキストを入力" /></div>;
+        if (variant === 'search') return <div className="w-full relative"><Search className="absolute left-3 top-2.5 h-5 w-5 text-slate-400" /><input type="text" className="w-full bg-slate-100 rounded-full pl-10 pr-4 py-2" placeholder="キーワード検索..." /></div>;
+        if (variant === 'placeholder') return <div className="w-full"><input type="text" className="w-full border p-2 rounded" placeholder="ここにヒントテキストが表示されます" /></div>;
+        if (variant === 'dropdown' || variant === 'combo') return <div className="w-full"><label className="text-sm font-bold text-slate-700">選択してください</label><div className="relative mt-1 border rounded p-2 flex justify-between items-center bg-white shadow-sm"><span>選択肢 A</span><ChevronDown className="h-4 w-4" /><div className="absolute top-full left-0 w-full bg-white border shadow-lg mt-1 rounded"><div className="p-2 hover:bg-slate-50 text-blue-600 font-bold bg-slate-50">選択肢 A</div><div className="p-2 hover:bg-slate-50">選択肢 B</div><div className="p-2 hover:bg-slate-50">選択肢 C</div></div></div></div>;
+        if (variant === 'slider' || variant === 'seek') return <div className="w-full px-4"><div className="text-sm mb-2 text-slate-500">Volume</div><div className="h-2 bg-slate-200 rounded-full overflow-hidden"><div className="h-full w-2/3 bg-blue-500"></div></div><div className="mt-2 w-full flex justify-between text-xs text-slate-400"><span>0</span><span>100</span></div></div>;
+        if (variant === 'rating') return <div className="flex gap-1"><Heart className="h-8 w-8 text-yellow-400 fill-yellow-400"/><Heart className="h-8 w-8 text-yellow-400 fill-yellow-400"/><Heart className="h-8 w-8 text-yellow-400 fill-yellow-400"/><Heart className="h-8 w-8 text-yellow-400 fill-yellow-400"/><Heart className="h-8 w-8 text-slate-200"/></div>;
+        if (variant === 'switch') return <div className="flex items-center gap-2"><div className="w-12 h-7 bg-green-500 rounded-full relative"><div className="absolute right-1 top-1 w-5 h-5 bg-white rounded-full shadow"></div></div><span className="font-bold">ON</span></div>;
+        if (variant === 'picker') return <div className="w-full h-32 bg-slate-100 border-y-2 border-slate-300 relative overflow-hidden flex items-center justify-center"><div className="absolute w-full h-8 bg-slate-300/20 top-1/2 -translate-y-1/2 pointer-events-none"></div><div className="text-center space-y-2 opacity-50 blur-[1px]"><div>2023</div><div>2024</div></div><div className="text-xl font-bold my-2">2025</div><div className="text-center space-y-2 opacity-50 blur-[1px]"><div>2026</div><div>2027</div></div></div>;
+        if (variant === 'color') return <div className="p-4 border rounded shadow-sm"><div className="w-full h-24 rounded bg-gradient-to-r from-red-500 via-green-500 to-blue-500 mb-2"></div><div className="flex justify-between text-xs font-mono text-slate-500"><span>#FF0000</span><span>#00FF00</span><span>#0000FF</span></div></div>;
+        if (variant === 'dropzone') return <div className="w-full h-32 border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center text-slate-400 bg-slate-50 hover:bg-slate-100 cursor-pointer"><ArrowUpCircle className="h-8 w-8 mb-2"/><span className="text-sm">ファイルをドロップ</span></div>;
+        if (variant === 'stepper') return <div className="flex items-center border rounded-md"><button className="px-3 py-1 bg-slate-50 hover:bg-slate-100">-</button><div className="px-4 font-bold">1</div><button className="px-3 py-1 bg-slate-50 hover:bg-slate-100">+</button></div>;
+      }
+
+      // Selections
+      if (type === 'selection') {
+        if (variant === 'check') return <div className="flex flex-col gap-2"><label className="flex items-center gap-2"><div className="w-5 h-5 border rounded bg-blue-600 text-white flex items-center justify-center"><Check className="h-4 w-4" /></div><span>オプション 1</span></label><label className="flex items-center gap-2"><div className="w-5 h-5 border rounded"></div><span>オプション 2</span></label></div>;
+        if (variant === 'radio') return <div className="flex flex-col gap-2"><label className="flex items-center gap-2"><div className="w-5 h-5 border rounded-full border-blue-600 flex items-center justify-center"><div className="w-3 h-3 bg-blue-600 rounded-full"></div></div><span>プラン A</span></label><label className="flex items-center gap-2"><div className="w-5 h-5 border rounded-full"></div><span>プラン B</span></label></div>;
+        if (variant === 'segment') return <div className="flex border rounded-lg overflow-hidden"><div className="bg-blue-600 text-white px-4 py-2 text-sm font-medium">Map</div><div className="bg-white text-slate-600 px-4 py-2 text-sm font-medium border-l">Transit</div><div className="bg-white text-slate-600 px-4 py-2 text-sm font-medium border-l">Satellite</div></div>;
+      }
+
+      // Modals / Overlays
+      if (type === 'modal' || type === 'overlay') {
+        if (variant === 'dialog' || variant === 'alert') return <div className="bg-black/20 absolute inset-0 flex items-center justify-center"><div className="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full"><h3 className="font-bold text-lg mb-2">{title}</h3><p className="text-sm text-slate-600 mb-4">ここにメッセージが表示されます。</p><div className="flex justify-end gap-2"><button className="text-blue-600 font-bold text-sm">OK</button></div></div></div>;
+        if (variant === 'drawer') return <div className="absolute inset-0 bg-black/20"><div className="h-full w-2/3 bg-white shadow-2xl p-4 animate-in slide-in-from-left"><div className="font-bold text-xl mb-6 border-b pb-4">Menu</div><div className="space-y-4"><div className="flex gap-2"><Home /> Home</div><div className="flex gap-2"><Settings /> Settings</div></div></div></div>;
+        if (variant === 'sheet') return <div className="absolute inset-0 bg-black/20 flex items-end"><div className="w-full bg-white rounded-t-2xl p-6 shadow-2xl animate-in slide-in-from-bottom"><div className="w-12 h-1 bg-slate-300 rounded-full mx-auto mb-4"></div><h3 className="font-bold text-lg">詳細情報</h3><p className="text-slate-500 h-32 mt-2">下からスライドして出てくるシートです。</p></div></div>;
+        if (variant === 'coach') return <div className="relative w-full h-full bg-black/60 flex items-center justify-center p-8"><div className="bg-white p-4 rounded text-center relative z-10"><p>ここをタップ！</p><div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white rotate-45"></div></div><div className="absolute bottom-20 right-10 w-16 h-16 border-4 border-white rounded-full animate-ping"></div></div>;
+        if (variant === 'lightbox') return <div className="absolute inset-0 bg-black/90 flex items-center justify-center"><div className="w-3/4 h-1/2 bg-slate-200 flex items-center justify-center text-slate-500">IMAGE</div></div>;
+      }
+
+      // Lists / Layouts
+      if (type === 'list' || type === 'table' || type === 'card' || type === 'layout') {
+        if (type === 'card') return <div className="w-64 border rounded-xl overflow-hidden shadow-sm"><div className="h-32 bg-slate-200 flex items-center justify-center"><ImageIcon className="text-slate-400" /></div><div className="p-4"><h3 className="font-bold">Card Title</h3><p className="text-xs text-slate-500 mt-1">カード形式のUIです。画像とテキストをまとめます。</p></div></div>;
+        if (variant === 'accordion') return <div className="w-full border rounded"><div className="p-3 bg-slate-50 font-bold flex justify-between"><span>セクション 1</span><ChevronDown /></div><div className="p-3 text-sm border-t">ここに詳細コンテンツが開きます。</div><div className="p-3 bg-white border-t font-bold flex justify-between"><span>セクション 2</span><ChevronRight /></div></div>;
+        if (variant === 'carousel') return <div className="w-full overflow-hidden"><div className="flex gap-2"><div className="w-32 h-20 bg-blue-100 rounded-lg flex-shrink-0"></div><div className="w-32 h-20 bg-red-100 rounded-lg flex-shrink-0"></div><div className="w-32 h-20 bg-green-100 rounded-lg flex-shrink-0"></div></div></div>;
+        if (variant === 'pane') return <div className="w-full h-40 border rounded flex"><div className="w-1/3 border-r bg-slate-50 p-2 text-xs">リスト...</div><div className="flex-1 p-2 text-xs">詳細...</div></div>;
+        if (variant === 'grid-icons') return <div className="grid grid-cols-4 gap-4 p-4"><div className="w-10 h-10 bg-slate-200 rounded-xl"></div><div className="w-10 h-10 bg-slate-200 rounded-xl"></div><div className="w-10 h-10 bg-slate-200 rounded-xl"></div><div className="w-10 h-10 bg-slate-200 rounded-xl"></div></div>;
+      }
+
+      // Indicators / Loaders
+      if (type === 'indicator' || type === 'loading') {
+        if (variant === 'step') return <div className="w-full flex items-center justify-center"><div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div><div className="w-10 h-1 bg-blue-600"></div><div className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">2</div><div className="w-10 h-1 bg-slate-200"></div><div className="w-8 h-8 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center text-xs font-bold">3</div></div>;
+        if (variant === 'spinner') return <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />;
+        if (variant === 'skeleton') return <div className="w-full space-y-3 animate-pulse"><div className="h-32 bg-slate-200 rounded-lg"></div><div className="h-4 bg-slate-200 rounded w-3/4"></div><div className="h-4 bg-slate-200 rounded w-1/2"></div></div>;
+        if (variant === 'badge') return <div className="relative inline-block"><MailIcon className="h-8 w-8 text-slate-600" /><span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">3</span></div>;
+        if (variant === 'toast') return <div className="absolute bottom-10 left-4 right-4 bg-slate-800 text-white p-3 rounded-lg shadow-lg flex justify-between items-center text-sm"><span>保存しました</span><span className="text-yellow-400 font-bold cursor-pointer">取り消し</span></div>;
+      }
+
+      // Visual / Others
+      if (type === 'visual') {
+        if (variant === 'marker') return <div className="w-full h-40 bg-slate-100 rounded relative overflow-hidden"><div className="absolute inset-0 grid grid-cols-4 grid-rows-4 gap-1 opacity-20"><div className="bg-slate-300"></div><div className="bg-slate-300"></div><div className="bg-slate-300"></div><div className="bg-slate-300"></div></div><div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full"><MapPin className="h-8 w-8 text-red-600 fill-red-600 animate-bounce" /></div></div>;
+        if (variant === 'scrim') return <div className="relative w-full h-full bg-white flex items-center justify-center"><div className="text-slate-300 font-bold text-4xl">Background</div><div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold">Scrim (暗幕)</div></div>;
+        if (variant === 'marquee') return <div className="w-full bg-black text-green-400 p-2 overflow-hidden font-mono"><div className="whitespace-nowrap animate-pulse">NEWS: UIデザインの学習進捗が100%に到達しました...</div></div>;
+        if (variant === 'tag') return <div className="flex gap-2"><span className="px-2 py-1 bg-slate-200 text-slate-600 text-xs rounded">Design</span><span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded">UI</span></div>;
+      }
+      
+      // Screens
+      if (type === 'screen') {
+        if (variant === 'splash') return <div className="w-full h-full bg-indigo-600 flex flex-col items-center justify-center text-white"><Layout className="h-16 w-16 mb-4 animate-pulse" /><h1 className="text-2xl font-bold">App Name</h1></div>;
+      }
+      
+      // Popups
+      if (type === 'popup' || type === 'menu') {
+        if (variant === 'tooltip') return <div className="relative inline-block"><button className="bg-slate-200 px-3 py-1 rounded text-sm">Hover Me</button><div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 text-white text-xs rounded whitespace-nowrap">Tooltip Content</div></div>;
+        if (variant === 'mega') return <div className="w-full border rounded p-4 shadow-lg"><div className="font-bold border-b mb-2">Products</div><div className="grid grid-cols-3 gap-4 text-sm text-slate-600"><div>Category A</div><div>Category B</div><div>Category C</div></div></div>;
+        if (variant === 'context') return <div className="absolute left-1/2 top-1/2 bg-white border shadow-lg rounded p-1 w-32"><div className="px-2 py-1 hover:bg-slate-100 text-sm">Copy</div><div className="px-2 py-1 hover:bg-slate-100 text-sm">Paste</div></div>;
+      }
+
+      // Default Fallback
+      return (
+        <div className="text-center p-6 border-2 border-dashed border-slate-300 rounded-xl">
+          <Layout className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+          <p className="text-slate-500 font-bold">{title}</p>
+          <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
+          <span className="inline-block mt-2 px-2 py-0.5 bg-slate-100 text-[10px] text-slate-400 rounded uppercase">{item.type}</span>
+        </div>
+      );
+    };
+
+    // --- Helper Icon for Badge ---
+    const MailIcon = ({ className }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+    );
+
+    // --- Time Formatter ---
+    const formatTime = (ms) => {
+      if (!ms) return '--:--';
+      const totalSeconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    function UIStudyApp() {
+      const [memorizedIds, setMemorizedIds] = useState([]);
+      const [activeId, setActiveId] = useState(UI_DATA[0].id);
+      const [isConfetti, setIsConfetti] = useState(false);
+      const [filterLevel, setFilterLevel] = useState('ALL'); // ALL, 初級, 中級, 上級
+      const [filterPlatform, setFilterPlatform] = useState('ALL'); // ALL, PC, MOBILE
+      const [showHelp, setShowHelp] = useState(false); // ヘルプモーダルの表示状態
+      
+      // 計測用State
+      const [startTime, setStartTime] = useState(Date.now());
+      const [completionTimes, setCompletionTimes] = useState({
+        ALL: null,
+        PC: null,
+        MOBILE: null
+      });
+
+      // --- Logic for filtering ---
+      const filteredItems = useMemo(() => {
+        return UI_DATA.filter(item => {
+          const levelMatch = filterLevel === 'ALL' || item.level === filterLevel;
+          
+          let platformMatch = true;
+          if (filterPlatform === 'PC') {
+            platformMatch = item.platform === 'pc' || item.platform === 'common';
+          } else if (filterPlatform === 'MOBILE') {
+            platformMatch = item.platform === 'mobile' || item.platform === 'common';
+          }
+          
+          return levelMatch && platformMatch;
+        });
+      }, [filterLevel, filterPlatform]);
+
+      // --- Logic for Completion Tracking ---
+      // 各カテゴリのアイテム総数を計算
+      const totalItemsCount = useMemo(() => ({
+        ALL: UI_DATA.length,
+        PC: UI_DATA.filter(item => item.platform === 'pc' || item.platform === 'common').length,
+        MOBILE: UI_DATA.filter(item => item.platform === 'mobile' || item.platform === 'common').length
+      }), []);
+
+      // memorizedIds が変化するたびに完了判定を行う
+      useEffect(() => {
+        const now = Date.now();
+        const newCompletionTimes = { ...completionTimes };
+        let hasUpdate = false;
+
+        // Helper to check category completion
+        const checkCategory = (category, filterFn) => {
+          // 既に完了時刻が記録されていればスキップ
+          if (completionTimes[category]) return;
+
+          const categoryItems = UI_DATA.filter(filterFn);
+          const isComplete = categoryItems.every(item => memorizedIds.includes(item.id));
+          
+          if (isComplete) {
+            newCompletionTimes[category] = now;
+            hasUpdate = true;
+          }
+        };
+
+        // ALL Check
+        checkCategory('ALL', () => true);
+        
+        // PC Check
+        checkCategory('PC', item => item.platform === 'pc' || item.platform === 'common');
+        
+        // MOBILE Check
+        checkCategory('MOBILE', item => item.platform === 'mobile' || item.platform === 'common');
+
+        if (hasUpdate) {
+          setCompletionTimes(newCompletionTimes);
+        }
+      }, [memorizedIds, completionTimes]);
+
+
+      // まだ覚えていないアイテムのリスト（現在のフィルタ適用後）
+      const remainingItems = filteredItems.filter((item) => !memorizedIds.includes(item.id));
+      
+      // 現在表示中のアイテムデータ
+      const currentItem = UI_DATA.find((item) => item.id === activeId);
+
+      // 進捗率（全体）
+      const totalItems = UI_DATA.length;
+      const progress = Math.round((memorizedIds.length / totalItems) * 100);
+
+      // --- アクション処理 ---
+
+      const handleMemorize = () => {
+        if (!activeId) return;
+
+        setMemorizedIds((prev) => [...prev, activeId]);
+        setIsConfetti(true);
+        setTimeout(() => setIsConfetti(false), 800);
+
+        const currentIndex = remainingItems.findIndex((item) => item.id === activeId);
+        
+        if (remainingItems.length > 1) {
+          let nextIndex = currentIndex;
+          if (nextIndex >= remainingItems.length - 1) {
+            nextIndex = 0;
+          }
+          const nextRemaining = remainingItems.filter(item => item.id !== activeId);
+          const nextItem = nextRemaining[nextIndex] || nextRemaining[0];
+          
+          if (nextItem) {
+            setActiveId(nextItem.id);
+          } else {
+            setActiveId(null);
+          }
+        } else {
+          setActiveId(null);
+        }
+      };
+
+      const handleLater = () => {
+        if (!activeId) return;
+        const currentIndex = remainingItems.findIndex((item) => item.id === activeId);
+        const nextIndex = (currentIndex + 1) % remainingItems.length;
+        const nextItem = remainingItems[nextIndex];
+        if (nextItem) {
+          setActiveId(nextItem.id);
+        }
+      };
+
+      const handleSelect = (id) => {
+        setActiveId(id);
+      };
+
+      const updateSelectionAfterFilter = (newLevel, newPlatform) => {
+        const nextFiltered = UI_DATA.filter(item => {
+          const levelMatch = newLevel === 'ALL' || item.level === newLevel;
+          let platformMatch = true;
+          if (newPlatform === 'PC') platformMatch = item.platform === 'pc' || item.platform === 'common';
+          else if (newPlatform === 'MOBILE') platformMatch = item.platform === 'mobile' || item.platform === 'common';
+          return levelMatch && platformMatch;
+        });
+        
+        const nextRemaining = nextFiltered.filter(item => !memorizedIds.includes(item.id));
+        if (nextRemaining.length > 0) {
+          setActiveId(nextRemaining[0].id);
+        } else {
+          setActiveId(null);
+        }
+      };
+
+      const handleLevelChange = (level) => {
+        setFilterLevel(level);
+        updateSelectionAfterFilter(level, filterPlatform);
+      };
+
+      const handlePlatformChange = (platform) => {
+        setFilterPlatform(platform);
+        updateSelectionAfterFilter(filterLevel, platform);
+      };
+      
+      const handleReset = () => {
+        setMemorizedIds([]);
+        setFilterLevel('ALL');
+        setFilterPlatform('ALL');
+        setActiveId(UI_DATA[0].id);
+        // タイム計測リセット
+        setStartTime(Date.now());
+        setCompletionTimes({ ALL: null, PC: null, MOBILE: null });
+      };
+
+      // コンプリート判定（全レベル完了時）
+      const isAllComplete = memorizedIds.length === totalItems;
+      
+      // カテゴリ完了判定（現在のフィルタ内完了時）
+      const isCategoryComplete = remainingItems.length === 0 && !isAllComplete && filteredItems.length > 0;
+
+      // View Mode
+      const viewMode = filterPlatform === 'MOBILE' ? 'mobile' : filterPlatform === 'PC' ? 'pc' : 'auto';
+
+      // タイム表示用の計算
+      const getElapsedTime = (category) => {
+        const end = completionTimes[category];
+        if (!end) return null;
+        return formatTime(end - startTime);
+      };
+
+      return (
+        <div className="flex h-screen w-full bg-slate-50 overflow-hidden font-sans text-slate-900">
+          
+          {/* --- 左サイドバー (リスト) --- */}
+          <aside className="flex w-80 flex-col border-r bg-white shadow-sm z-10">
+            <div className="p-4 border-b bg-slate-50/50">
+              <h1 className="flex items-center gap-2 text-xl font-bold tracking-tight text-slate-800">
+                <Layout className="h-5 w-5 text-indigo-600" />
+                UI暗記ドリル
+                <span className="text-xs bg-slate-800 text-white px-1.5 py-0.5 rounded-full">100</span>
+              </h1>
+              
+              {/* Platform Tabs */}
+              <div className="mt-4 flex p-1 bg-slate-100 rounded-lg">
+                {[
+                  { id: 'ALL', label: 'すべて', icon: Grid },
+                  { id: 'PC', label: 'PC編', icon: Monitor },
+                  { id: 'MOBILE', label: 'スマホ編', icon: Smartphone }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handlePlatformChange(tab.id)}
+                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-bold rounded-md transition-all ${
+                      filterPlatform === tab.id 
+                        ? 'bg-white text-indigo-600 shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    <tab.icon className="h-3 w-3" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Level Filter */}
+              <div className="flex gap-1 mt-2">
+                {['ALL', '初級', '中級', '上級'].map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => handleLevelChange(level)}
+                    className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                      filterLevel === level 
+                        ? 'bg-slate-800 text-white' 
+                        : 'bg-white border text-slate-500 hover:bg-slate-50'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+              
+               {/* 進捗バー */}
+               <div className="mt-3">
+                <div className="flex justify-between text-[10px] font-medium text-slate-400 mb-1">
+                  <span>Total Progress</span>
+                  <span>{memorizedIds.length} / {totalItems}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2 space-y-0.5 custom-scrollbar">
+              <div className="px-2 py-2 text-xs font-semibold uppercase text-slate-400 tracking-wider flex justify-between">
+                <span>List ({remainingItems.length})</span>
+              </div>
+              
+              {remainingItems.length === 0 && (
+                 <div className="p-8 text-center text-slate-400 text-sm">
+                   {isAllComplete ? "すべて完了しました！" : "このカテゴリは完了です！"}
+                 </div>
+              )}
+
+              {remainingItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelect(item.id)}
+                  className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${
+                    activeId === item.id
+                      ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${
+                      item.level === '初級' ? 'bg-green-100 text-green-700' :
+                      item.level === '中級' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {item.level === '初級' ? 'B' : item.level === '中級' ? 'I' : 'A'}
+                    </span>
+                    <span className="truncate">{item.title}</span>
+                  </div>
+                  {item.platform !== 'common' && (
+                     <span className="text-[10px] text-slate-300">
+                       {item.platform === 'mobile' ? <Smartphone className="h-3 w-3"/> : <Monitor className="h-3 w-3"/>}
+                     </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          {/* --- 右メインコンテンツ (プレビュー) --- */}
+          <main className="relative flex-1 flex flex-col items-center justify-center bg-slate-100 p-4 sm:p-8">
+            
+            {/* ヘルプボタン */}
+            <button
+              onClick={() => setShowHelp(true)}
+              className="absolute top-4 right-4 p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors z-20"
+              title="ヘルプ＆詳細"
+            >
+              <HelpCircle className="h-6 w-6" />
+            </button>
+
+            {/* 背景装飾 */}
+            <div className="absolute inset-0 z-0 opacity-[0.03]" 
+                 style={{ backgroundImage: 'radial-gradient(#444 1px, transparent 1px)', backgroundSize: '24px 24px' }}>
+            </div>
+
+            {/* --- ヘルプモーダル --- */}
+            {showHelp && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+                  {/* Header */}
+                  <div className="p-4 border-b flex justify-between items-center bg-slate-50">
+                    <h3 className="font-bold text-lg flex items-center gap-2 text-slate-800">
+                      <HelpCircle className="h-5 w-5 text-indigo-600"/>
+                      ヘルプ & UI詳細
+                    </h3>
+                    <button onClick={() => setShowHelp(false)} className="p-1 hover:bg-slate-200 rounded-full transition-colors">
+                      <X className="h-5 w-5 text-slate-500"/>
+                    </button>
+                  </div>
+                  
+                  {/* Content Scrollable */}
+                  <div className="p-6 overflow-y-auto custom-scrollbar">
+                    
+                    {/* Usage Section */}
+                    <section className="mb-8">
+                      <h4 className="font-bold text-slate-800 mb-3 border-l-4 border-indigo-500 pl-3">このアプリの使い方</h4>
+                      <ul className="space-y-3 text-sm text-slate-600">
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">1</span>
+                          <span><span className="font-bold text-slate-800">「チェックして次へ」</span>ボタンを押すと、覚えた項目としてリストから削除され、次の問題に進みます。</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">2</span>
+                          <span><span className="font-bold text-slate-800">「後で」</span>ボタンを押すと、リストに残したままスキップします。後でまた出題されます。</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="flex-shrink-0 w-6 h-6 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold">3</span>
+                          <span>左サイドメニュー上部のタブで<span className="font-bold text-slate-800">「PC編 / スマホ編」</span>を切り替えられます。プレビュー枠も自動で変化します。</span>
+                        </li>
+                      </ul>
+                    </section>
+
+                    {/* Detailed Info Section (Dynamic) */}
+                    {currentItem && (
+                      <section>
+                        <h4 className="font-bold text-slate-800 mb-3 border-l-4 border-amber-500 pl-3">
+                          現在のUI: {currentItem.title}
+                        </h4>
+                        <div className="bg-slate-50 rounded-lg p-5 text-sm space-y-4 border border-slate-100">
+                          <div>
+                            <span className="block text-xs font-bold text-slate-400 uppercase mb-1">Description</span>
+                            <p className="text-slate-700 leading-relaxed">{currentItem.desc}</p>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Category</span>
+                              <span className="font-medium text-indigo-600 capitalize">{currentItem.type}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Level</span>
+                              <span className={`font-bold ${
+                                currentItem.level === '初級' ? 'text-green-600' :
+                                currentItem.level === '中級' ? 'text-amber-600' : 'text-red-600'
+                              }`}>{currentItem.level}</span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase">Platform</span>
+                              <span className="font-medium text-slate-700 capitalize">
+                                {currentItem.platform === 'common' ? 'Common' : currentItem.platform}
+                              </span>
+                            </div>
+                            <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
+                              <span className="block text-[10px] font-bold text-slate-400 uppercase">ID</span>
+                              <span className="font-mono text-xs text-slate-500">{currentItem.id}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-slate-200">
+                            <p className="text-xs text-slate-500 leading-relaxed">
+                              <span className="font-bold text-amber-600 block mb-1">💡 One Point Advice</span>
+                              このUI要素は、
+                              {currentItem.platform === 'mobile' ? 'スマートフォンの限られた画面スペースを有効活用するために設計されています。指での操作性（タップ領域の大きさ）に配慮が必要です。' : 
+                               currentItem.platform === 'pc' ? 'マウスとキーボード操作を前提としたデスクトップ環境で威力を発揮します。情報の密度や一覧性を高めることができます。' : 
+                               'デバイスを問わず広く使用される基本的なコンポーネントです。ユーザーが直感的に操作できるよう、標準的な配置や挙動を守ることが重要です。'}
+                              <br/>
+                              {currentItem.level === '上級' ? '実装時はアクセシビリティ（キーボード操作やスクリーンリーダー対応）にも特に注意を払いましょう。' : ''}
+                            </p>
+                          </div>
+                        </div>
+                      </section>
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-4 border-t bg-slate-50 text-right flex justify-end">
+                    <button 
+                      onClick={() => setShowHelp(false)}
+                      className="px-6 py-2 bg-slate-800 text-white rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shadow-sm"
+                    >
+                      閉じる
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isAllComplete ? (
+              <div className="text-center z-10 animate-in zoom-in duration-500 max-w-md mx-auto">
+                <div className="mb-6 inline-flex p-8 rounded-full bg-green-100 text-green-600 animate-bounce">
+                  <Check className="h-16 w-16" />
+                </div>
+                <h1 className="text-3xl font-bold text-slate-800 mb-2">完全制覇！</h1>
+                <p className="text-slate-600 mb-6">
+                  100個すべてのUIパターンを学習しました。<br/>あなたのUI知識は完璧です。
+                </p>
+                
+                {/* Time Records for All Complete */}
+                <div className="bg-white rounded-xl shadow-lg border border-slate-100 p-6 mb-8 text-left space-y-4">
+                  <h3 className="font-bold text-slate-800 border-b pb-2 flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-indigo-500"/>
+                    Clear Time Records
+                  </h3>
+                  
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <Grid className="h-4 w-4 text-slate-400"/>
+                      <span className="text-slate-600">すべて (100問)</span>
+                    </div>
+                    <span className="font-mono font-bold text-lg text-slate-800">{getElapsedTime('ALL') || '--:--'}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="h-4 w-4 text-slate-400"/>
+                      <span className="text-slate-600">PC編 ({totalItemsCount.PC}問)</span>
+                    </div>
+                    <span className="font-mono font-bold text-lg text-slate-800">{getElapsedTime('PC') || '--:--'}</span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-slate-400"/>
+                      <span className="text-slate-600">スマホ編 ({totalItemsCount.MOBILE}問)</span>
+                    </div>
+                    <span className="font-mono font-bold text-lg text-slate-800">{getElapsedTime('MOBILE') || '--:--'}</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleReset}
+                  className="flex items-center gap-2 mx-auto rounded-full bg-slate-900 px-8 py-4 font-bold text-white shadow-lg transition hover:scale-105"
+                >
+                  <RefreshCw className="h-5 w-5" />
+                  最初からやり直す
+                </button>
+              </div>
+            ) : isCategoryComplete ? (
+              <div className="text-center z-10">
+                <div className="mb-4 inline-flex p-6 rounded-full bg-indigo-100 text-indigo-600">
+                  <Check className="h-12 w-12" />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">カテゴリクリア！</h2>
+                <p className="text-slate-500 mb-6">現在選択中のフィルタ条件の問題はすべて完了しました。</p>
+                
+                {/* Current Category Time */}
+                <div className="bg-white/80 backdrop-blur rounded-lg border border-slate-200 p-4 mb-8 inline-block shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-indigo-500"/>
+                    <div className="text-left">
+                       <div className="text-xs text-slate-400 font-bold uppercase">Elapsed Time</div>
+                       <div className="font-mono font-bold text-xl text-slate-800">
+                         {filterPlatform === 'ALL' ? getElapsedTime('ALL') : 
+                          filterPlatform === 'PC' ? getElapsedTime('PC') : getElapsedTime('MOBILE')}
+                       </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="block">
+                  <button
+                    onClick={handleReset}
+                    className="px-6 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 font-bold hover:bg-slate-50"
+                  >
+                    リセットして再挑戦
+                  </button>
+                </div>
+              </div>
+            ) : currentItem ? (
+              <div className="relative z-10 w-full max-w-5xl h-full flex flex-col items-center animate-in fade-in duration-300">
+                
+                {/* ヘッダー情報 */}
+                <div className="mb-6 text-center w-full">
+                  <div className="flex justify-center gap-2 mb-2">
+                    <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${
+                      currentItem.level === '初級' ? 'bg-green-100 text-green-700' :
+                      currentItem.level === '中級' ? 'bg-amber-100 text-amber-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {currentItem.level}
+                    </span>
+                    <span className="inline-block px-3 py-1 text-xs text-slate-500 bg-white border rounded-full flex items-center gap-1">
+                      {currentItem.platform === 'mobile' ? <Smartphone className="h-3 w-3"/> : 
+                       currentItem.platform === 'pc' ? <Monitor className="h-3 w-3"/> : <Grid className="h-3 w-3"/>}
+                      {currentItem.platform === 'common' ? '共通' : currentItem.platform === 'mobile' ? 'Mobile' : 'PC'}
+                    </span>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2">{currentItem.title}</h2>
+                  <p className="text-slate-500 max-w-xl mx-auto">{currentItem.desc}</p>
+                </div>
+
+                {/* プレビューレンダラー */}
+                <div className="flex-1 w-full min-h-0 flex items-center justify-center mb-8">
+                  <PreviewRenderer item={currentItem} viewMode={viewMode} />
+                </div>
+
+                {/* アクションボタン */}
+                <div className="w-full max-w-sm flex gap-4 mt-auto">
+                  <button
+                    onClick={handleLater}
+                    className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-4 py-4 text-base font-bold text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-800 hover:border-slate-300 active:scale-95"
+                  >
+                    <HelpCircle className="h-5 w-5" />
+                    後で
+                  </button>
+
+                  <button
+                    onClick={handleMemorize}
+                    className={`
+                      flex-[2] relative overflow-hidden flex items-center justify-center gap-2 rounded-xl px-6 py-4 text-lg font-bold text-white shadow-xl shadow-indigo-500/20 transition-all 
+                      ${isConfetti ? 'bg-green-500 scale-105' : 'bg-indigo-600 hover:bg-indigo-700 hover:-translate-y-1 active:translate-y-0'}
+                    `}
+                  >
+                    {isConfetti ? (
+                      <>
+                        <Check className="h-6 w-6 animate-bounce" />
+                        覚えた！
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-6 w-6" />
+                        チェックして次へ
+                      </>
+                    )}
+                  </button>
+                </div>
+                
+                <p className="mt-4 text-xs text-slate-400">
+                  {remainingItems.length} items remaining in this list
+                </p>
+
+              </div>
+            ) : (
+              <div className="text-center text-slate-400">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                <p>Loading...</p>
+              </div>
+            )}
+          </main>
+        </div>
+      );
+    }
+
+    // Reactアプリの起動
+    const root = createRoot(document.getElementById('root'));
+    root.render(<UIStudyApp />);
+  </script>
+</body>
+</html>
