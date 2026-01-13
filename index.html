@@ -59,12 +59,13 @@
     import { createRoot } from 'react-dom/client';
     import {
       Check, RefreshCw, Layout, Type, MousePointer, Bell, AlertCircle,
-      CreditCard, Menu, X, ChevronRight, Eye, HelpCircle, Filter,
+      CreditCard, Menu, X, ChevronLeft, ChevronRight, Eye, HelpCircle, Filter,
       Search, ArrowLeft, Home, User, Settings, MoreVertical,
-      ChevronDown, Plus, Share, Heart, MessageCircle, MoreHorizontal,
+      ChevronDown, ChevronUp, Plus, Share, Heart, MessageCircle, MoreHorizontal,
       Loader2, Calendar, MapPin, Image as ImageIcon, ToggleLeft, List,
       Smartphone, Monitor, Grid, Command, AlignLeft, ArrowUpCircle,
-      FileText, Layers, Grip, MousePointer2, Info, Clock
+      FileText, Layers, Grip, MousePointer2, Info, Clock,
+      Lock, Volume2, Hash, Edit3, Share2, Trash2, Code, Book
     } from 'lucide-react';
 
     // --- UIデータセット (Q1〜Q100) ---
@@ -578,8 +579,8 @@
                     key={tab.id}
                     onClick={() => handlePlatformChange(tab.id)}
                     className={`flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-bold rounded-md transition-all ${filterPlatform === tab.id
-                        ? 'bg-white text-indigo-600 shadow-sm'
-                        : 'text-slate-500 hover:text-slate-700'
+                      ? 'bg-white text-indigo-600 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700'
                       }`}
                   >
                     <tab.icon className="h-3 w-3" />
@@ -595,8 +596,8 @@
                     key={level}
                     onClick={() => handleLevelChange(level)}
                     className={`flex-1 py-1.5 text-xs font-bold rounded-md transition-colors ${filterLevel === level
-                        ? 'bg-slate-800 text-white'
-                        : 'bg-white border text-slate-500 hover:bg-slate-50'
+                      ? 'bg-slate-800 text-white'
+                      : 'bg-white border text-slate-500 hover:bg-slate-50'
                       }`}
                   >
                     {level}
@@ -635,14 +636,14 @@
                   key={item.id}
                   onClick={() => handleSelect(item.id)}
                   className={`group flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-all ${activeId === item.id
-                      ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-indigo-50 text-indigo-700 shadow-sm ring-1 ring-indigo-200'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                     }`}
                 >
                   <div className="flex items-center gap-3 overflow-hidden">
                     <span className={`flex-shrink-0 flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold ${item.level === '初級' ? 'bg-green-100 text-green-700' :
-                        item.level === '中級' ? 'bg-amber-100 text-amber-700' :
-                          'bg-red-100 text-red-700'
+                      item.level === '中級' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
                       }`}>
                       {item.level === '初級' ? 'B' : item.level === '中級' ? 'I' : 'A'}
                     </span>
@@ -732,7 +733,7 @@
                             <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
                               <span className="block text-[10px] font-bold text-slate-400 uppercase">Level</span>
                               <span className={`font-bold ${currentItem.level === '初級' ? 'text-green-600' :
-                                  currentItem.level === '中級' ? 'text-amber-600' : 'text-red-600'
+                                currentItem.level === '中級' ? 'text-amber-600' : 'text-red-600'
                                 }`}>{currentItem.level}</span>
                             </div>
                             <div className="bg-white p-2 rounded border border-slate-100 shadow-sm">
@@ -864,8 +865,8 @@
                 <div className="mb-6 text-center w-full">
                   <div className="flex justify-center gap-2 mb-2">
                     <span className={`inline-block px-3 py-1 text-xs font-bold rounded-full ${currentItem.level === '初級' ? 'bg-green-100 text-green-700' :
-                        currentItem.level === '中級' ? 'bg-amber-100 text-amber-700' :
-                          'bg-red-100 text-red-700'
+                      currentItem.level === '中級' ? 'bg-amber-100 text-amber-700' :
+                        'bg-red-100 text-red-700'
                       }`}>
                       {currentItem.level}
                     </span>
